@@ -7,8 +7,7 @@ import os
 import numpy as np
 
 import torch
-# from torch.optim import Adam
-from torch.optim import SGD
+from torch.optim import SGD, Adam
 
 from torchvision import models
 
@@ -49,7 +48,7 @@ class CNNLayerVisualization():
         # Process image and return variable
         processed_image = preprocess_image(random_image, False)
         # Define optimizer for the image
-        optimizer = SGD([processed_image], lr=0.1, weight_decay=1e-6)
+        optimizer = Adam([processed_image], lr=0.1, weight_decay=1e-6)
         for i in range(1, 31):
             optimizer.zero_grad()
             # Assign create image to a variable to move forward in the model
@@ -72,7 +71,7 @@ class CNNLayerVisualization():
             self.created_image = recreate_image(processed_image)
             # Save image
             if i % 5 == 0:
-                im_path = 'pytorch-cnn-visualizations/generated/layer_vis_l' + str(self.selected_layer) + \
+                im_path = '../generated/layer_vis_l' + str(self.selected_layer) + \
                     '_f' + str(self.selected_filter) + '_iter' + str(i) + '.jpg'
                 save_image(self.created_image, im_path)
 
@@ -83,7 +82,7 @@ class CNNLayerVisualization():
         # Process image and return variable
         processed_image = preprocess_image(random_image, False)
         # Define optimizer for the image
-        optimizer = SGD([processed_image], lr=0.1, weight_decay=1e-6) # !
+        optimizer = Adam([processed_image], lr=0.1, weight_decay=1e-6) # !
         for i in range(1, 31):
             optimizer.zero_grad()
             # Assign create image to a variable to move forward in the model
