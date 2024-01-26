@@ -7,11 +7,15 @@ import os
 import numpy as np
 
 import torch
-from torch.optim import Adam
+# from torch.optim import Adam
+from torch.optim import SGD
+
 from torchvision import models
 
 from misc_functions import preprocess_image, recreate_image, save_image
 
+import models
+from models.simplenet import simplenet_cifar_310k # !
 
 class CNNLayerVisualization():
     """
@@ -28,34 +32,33 @@ class CNNLayerVisualization():
         if not os.path.exists('../generated'):
             os.makedirs('../generated')
 
-    def hook_layer(self):
+    def hook_layer(self): # !
         def hook_function(module, grad_in, grad_out):
             # Gets the conv output of the selected filter (from selected layer)
             self.conv_output = grad_out[0, self.selected_filter]
-        # Hook the selected layer
-        self.model[self.selected_layer].register_forward_hook(hook_function)
+    
+        # Hook the selected layer from the 'features' sequential container
+        layer = self.model.features[self.selected_layer]
+        layer.register_forward_hook(hook_function)
 
-    def visualise_layer_with_hooks(self):
+    def visualise_layer_with_hooks(self): # !
         # Hook the selected layer
         self.hook_layer()
         # Generate a random image
-        random_image = np.uint8(np.random.uniform(150, 180, (224, 224, 3)))
+        random_image = np.uint8(np.random.uniform(150, 180, (224, 224, 1)))  # !
         # Process image and return variable
         processed_image = preprocess_image(random_image, False)
         # Define optimizer for the image
-        optimizer = Adam([processed_image], lr=0.1, weight_decay=1e-6)
+        optimizer = SGD([processed_image], lr=0.1, weight_decay=1e-6)
         for i in range(1, 31):
             optimizer.zero_grad()
             # Assign create image to a variable to move forward in the model
             x = processed_image
-            for index, layer in enumerate(self.model):
+            for index, layer in enumerate(self.model.features):
                 # Forward pass layer by layer
-                # x is not used after this point because it is only needed to trigger
-                # the forward hook function
                 x = layer(x)
-                # Only need to forward until the selected layer is reached
                 if index == self.selected_layer:
-                    # (forward hook function triggered)
+                    # Only need to forward until the selected layer is reached
                     break
             # Loss function is the mean of the output of the selected layer/filter
             # We try to minimize the mean of the output of that specific filter
@@ -69,18 +72,18 @@ class CNNLayerVisualization():
             self.created_image = recreate_image(processed_image)
             # Save image
             if i % 5 == 0:
-                im_path = '../generated/layer_vis_l' + str(self.selected_layer) + \
+                im_path = 'pytorch-cnn-visualizations/generated/layer_vis_l' + str(self.selected_layer) + \
                     '_f' + str(self.selected_filter) + '_iter' + str(i) + '.jpg'
                 save_image(self.created_image, im_path)
 
     def visualise_layer_without_hooks(self):
         # Process image and return variable
         # Generate a random image
-        random_image = np.uint8(np.random.uniform(150, 180, (224, 224, 3)))
+        random_image = np.uint8(np.random.uniform(150, 180, (224, 224, 1)))
         # Process image and return variable
         processed_image = preprocess_image(random_image, False)
         # Define optimizer for the image
-        optimizer = Adam([processed_image], lr=0.1, weight_decay=1e-6)
+        optimizer = SGD([processed_image], lr=0.1, weight_decay=1e-6) # !
         for i in range(1, 31):
             optimizer.zero_grad()
             # Assign create image to a variable to move forward in the model
@@ -116,11 +119,12 @@ class CNNLayerVisualization():
 
 
 if __name__ == '__main__':
-    cnn_layer = 17
+    cnn_layer = 13
     filter_pos = 5
     # Fully connected layer is not needed
-    pretrained_model = models.vgg16(pretrained=True).features
-    layer_vis = CNNLayerVisualization(pretrained_model, cnn_layer, filter_pos)
+    # pretrained_model = models.vgg16(pretrained=True).features
+    net = models.__dict__['simplenet_cifar_310k'](num_classes=10, in_chans=1)
+    layer_vis = CNNLayerVisualization(net, cnn_layer, filter_pos)
 
     # Layer visualization with pytorch hooks
     layer_vis.visualise_layer_with_hooks()

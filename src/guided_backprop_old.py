@@ -6,7 +6,7 @@ Created on Thu Oct 26 11:23:47 2017
 import torch
 from torch.nn import ReLU
 
-from src.misc_functions import (get_example_params,
+from misc_functions import (get_example_params,
                             convert_to_grayscale,
                             save_gradient_images,
                             get_positive_negative_saliency)
@@ -78,7 +78,7 @@ class GuidedBackprop():
 
 
 if __name__ == '__main__':
-    target_example = 1  # digit 4 
+    target_example = 0  # Snake
     (original_image, prep_img, target_class, file_name_to_export, pretrained_model) =\
         get_example_params(target_example)
 

@@ -13,10 +13,7 @@ from matplotlib import pyplot as plt
 
 import torch
 from torch.autograd import Variable
-# from torchvision import models
-
-import models
-from models.simplenet import simplenet_cifar_310k # !
+from torchvision import models
 
 
 def convert_to_grayscale(im_as_arr):
@@ -184,12 +181,10 @@ def preprocess_image(pil_im, resize_im=True):
 
     # Resize image
     if resize_im:
-        pil_im = pil_im.resize((224, 224))
+        pil_im = pil_im.resize((224, 224), Image.ANTIALIAS)
 
     im_as_arr = np.float32(pil_im)
-    if len(im_as_arr.shape) == 2:  # Grayscale image, add a channel dimension
-        im_as_arr = np.expand_dims(im_as_arr, axis=2)
-    im_as_arr = im_as_arr.transpose(2, 0, 1)  # Convert array to C,H,W # ! adds an extra dimension at the third position (axis=2) for the channel, which is necessary for grayscale images
+    im_as_arr = im_as_arr.transpose(2, 0, 1)  # Convert array to D,W,H
     # Normalize the channels
     for channel, _ in enumerate(im_as_arr):
         im_as_arr[channel] /= 255
@@ -215,24 +210,14 @@ def recreate_image(im_as_var):
     reverse_mean = [-0.485, -0.456, -0.406]
     reverse_std = [1/0.229, 1/0.224, 1/0.225]
     recreated_im = copy.copy(im_as_var.data.numpy()[0])
-    
-    # Check if the image is grayscale (single channel)
-    if recreated_im.shape[0] == 1:
-        # Handle grayscale image
-        recreated_im = recreated_im.squeeze()
-        recreated_im = recreated_im * reverse_std[0] + reverse_mean[0]
-        recreated_im[recreated_im > 1] = 1
-        recreated_im[recreated_im < 0] = 0
-        recreated_im = np.uint8(recreated_im * 255)
-    else:
-        # Handle RGB image
-        for c in range(3):
-            recreated_im[c] /= reverse_std[c]
-            recreated_im[c] -= reverse_mean[c]
-        recreated_im[recreated_im > 1] = 1
-        recreated_im[recreated_im < 0] = 0
-        recreated_im = np.uint8(recreated_im.transpose(1, 2, 0) * 255)
+    for c in range(3):
+        recreated_im[c] /= reverse_std[c]
+        recreated_im[c] -= reverse_mean[c]
+    recreated_im[recreated_im > 1] = 1
+    recreated_im[recreated_im < 0] = 0
+    recreated_im = np.round(recreated_im * 255)
 
+    recreated_im = np.uint8(recreated_im).transpose(1, 2, 0)
     return recreated_im
 
 
@@ -265,25 +250,20 @@ def get_example_params(example_index):
         pretrained_model(Pytorch model): Model to use for the operations
     """
     # Pick one of the examples
-    example_list = (('../input_images/digit_4.png', 4), # !
-                    ('../input_images/digit_7.png', 7),
-                    ('../input_images/digit_8.png', 8))
+    example_list = (('../input_images/snake.png', 56),
+                    ('../input_images/cat_dog.png', 243),
+                    ('../input_images/spider.png', 72))
     img_path = example_list[example_index][0]
     target_class = example_list[example_index][1]
     file_name_to_export = img_path[img_path.rfind('/')+1:img_path.rfind('.')]
     # Read image
-    original_image = Image.open(img_path).convert('L') # !
+    original_image = Image.open(img_path).convert('RGB')
     # Process image
     prep_img = preprocess_image(original_image)
     # Define model
-    # pretrained_model = models.alexnet(pretrained=True)
-    model_names = sorted(name for name in models.__dict__
-      if name.islower() and not name.startswith("__")
-      and callable(models.__dict__[name]))
-    print('models : ',model_names)
-    net = models.__dict__['simplenet_cifar_310k'](num_classes=10, in_chans=1)
+    pretrained_model = models.alexnet(pretrained=True)
     return (original_image,
             prep_img,
             target_class,
             file_name_to_export,
-            net)
+            pretrained_model)
