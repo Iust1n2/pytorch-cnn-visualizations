@@ -7,9 +7,10 @@ import os
 import numpy as np
 
 import torch
-from torch.optim import SGD
+from torch.optim import SGD, Adam
 from torchvision import models
 
+import models
 from misc_functions import preprocess_image, recreate_image, save_image
 
 
@@ -24,7 +25,7 @@ class ClassSpecificImageGeneration():
         self.model.eval()
         self.target_class = target_class
         # Generate a random image
-        self.created_image = np.uint8(np.random.uniform(0, 255, (224, 224, 3)))
+        self.created_image = np.uint8(np.random.uniform(0, 255, (224, 224, 1))) # ! 
         # Create the folder to export images if not exists
         if not os.path.exists('../generated/class_'+str(self.target_class)):
             os.makedirs('../generated/class_'+str(self.target_class))
@@ -44,7 +45,7 @@ class ClassSpecificImageGeneration():
             self.processed_image = preprocess_image(self.created_image, False)
 
             # Define optimizer for the image
-            optimizer = SGD([self.processed_image], lr=initial_learning_rate)
+            optimizer = Adam([self.processed_image], lr=initial_learning_rate)
             # Forward
             output = self.model(self.processed_image)
             # Target specific class
@@ -70,7 +71,8 @@ class ClassSpecificImageGeneration():
 
 
 if __name__ == '__main__':
-    target_class = 130  # Flamingo
-    pretrained_model = models.alexnet(pretrained=True)
-    csig = ClassSpecificImageGeneration(pretrained_model, target_class)
+    # target_class = 130  # Flamingo
+    target_class = 7
+    net = models.__dict__['simplenet_cifar_310k'](num_classes=10, in_chans=1)
+    csig = ClassSpecificImageGeneration(net, target_class)
     csig.generate()

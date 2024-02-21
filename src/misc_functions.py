@@ -265,14 +265,21 @@ def get_example_params(example_index):
         pretrained_model(Pytorch model): Model to use for the operations
     """
     # Pick one of the examples
-    example_list = (('../input_images/digit_4.png', 4), # !
-                    ('../input_images/digit_7.png', 7),
-                    ('../input_images/digit_8.png', 8))
+    example_list = (('../input_images/misclassified_cifar10/misclassified_7_pred_ship_actual_plane.png', 0), # !
+                    ('../input_images/misclassified_cifar10/misclassified_28_pred_truck_actual_car.png', 1),
+                    ('../input_images/misclassified_cifar10/misclassified_29_pred_frog_actual_bird.png', 2),
+                    ('../input_images/misclassified_cifar10/misclassified_34_pred_plane_actual_cat.png', 3),
+                    ('../input_images/misclassified_cifar10/misclassified_30_pred_dog_actual_deer.png', 4),
+                    ('../input_images/misclassified_cifar10/misclassified_36_pred_cat_actual_dog.png', 5),
+                    ('../input_images/misclassified_cifar10/misclassified_6_pred_plane_actual_frog.png', 6),
+                    ('../input_images/misclassified_cifar10/misclassified_13_pred_bird_actual_horse.png', 7),
+                    ('../input_images/misclassified_cifar10/misclassified_25_pred_plane_actual_ship.png', 8),
+                    ('../input_images/misclassified_cifar10/misclassified_19_pred_ship_actual_truck.png', 9))
     img_path = example_list[example_index][0]
     target_class = example_list[example_index][1]
     file_name_to_export = img_path[img_path.rfind('/')+1:img_path.rfind('.')]
     # Read image
-    original_image = Image.open(img_path).convert('L') # !
+    original_image = Image.open(img_path).convert('RGB') # ! # convert L to grayscale, RGB to color
     # Process image
     prep_img = preprocess_image(original_image)
     # Define model
@@ -281,7 +288,7 @@ def get_example_params(example_index):
       if name.islower() and not name.startswith("__")
       and callable(models.__dict__[name]))
     print('models : ',model_names)
-    net = models.__dict__['simplenet_cifar_310k'](num_classes=10, in_chans=1)
+    net = models.__dict__['simplenet_cifar_5m'](num_classes=10, in_chans=3) # !
     return (original_image,
             prep_img,
             target_class,

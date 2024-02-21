@@ -29,12 +29,12 @@ class RegularizedClassSpecificImageGeneration():
         self.model.eval()
         self.target_class = target_class
         # Generate a random image
-        self.created_image = np.uint8(np.random.uniform(0, 255, (224, 224, 3)))
+        self.created_image = np.uint8(np.random.uniform(0, 255, (224, 224, 3))) # !
         # Create the folder to export images if not exists
         if not os.path.exists(f'../generated/class_{self.target_class}'):
             os.makedirs(f'../generated/class_{self.target_class}')
 
-    def generate(self, iterations=150, blur_freq=4, blur_rad=1, wd=0.0001, clipping_value=0.1):
+    def generate(self, iterations=600, blur_freq=4, blur_rad=0, wd=0.0001, clipping_value=0.1): # original hyperparams: 300, 4, 1, 0.0001, 0.1
         """Generates class specific image with enhancements to improve image quality. 
         See https://arxiv.org/abs/1506.06579 for details on each argument's effect on output quality. 
         
@@ -52,7 +52,9 @@ class RegularizedClassSpecificImageGeneration():
         Returns:
             np.ndarray -- Final maximally activated class image
         """
-        initial_learning_rate = 6
+        initial_learning_rate = 6 # 6 original
+        # print the hyperparams before entering loop
+        print(f"iterations: {iterations}, blur_freq: {blur_freq}, blur_rad: {blur_rad}, wd: {wd}, clipping_value: {clipping_value}, initial_learning_rate: {initial_learning_rate}")
         for i in range(1, iterations):
             # Process image and return variable
 
@@ -74,10 +76,11 @@ class RegularizedClassSpecificImageGeneration():
                             lr=initial_learning_rate, weight_decay=wd)
             # Forward
             output = self.model(self.processed_image)
-            # Target specific class
+            print(output) # print output class activations 
+            # Target specific class 
             class_loss = -output[0, self.target_class]
 
-            if i in np.linspace(0, iterations, 10, dtype=int):
+            if i in np.linspace(0, iterations, 20, dtype=int):
                 print('Iteration:', str(i), 'Loss',
                       "{0:.2f}".format(class_loss.data.cpu().numpy()))
             # Zero grads
@@ -93,7 +96,7 @@ class RegularizedClassSpecificImageGeneration():
             # Recreate image
             self.created_image = recreate_image(self.processed_image.cpu())
 
-            if i in np.linspace(0, iterations, 10, dtype=int):
+            if i in np.linspace(0, iterations, 20, dtype=int):
                 # Save image
                 im_path = f'../generated/class_{self.target_class}/c_{self.target_class}_iter_{i}_loss_{class_loss.data.cpu().numpy()}.jpg'
                 save_image(self.created_image, im_path)
@@ -140,8 +143,8 @@ def preprocess_and_blur_image(pil_im, resize_im=True, blur_rad=None):
                 "could not transform PIL_img to a PIL Image object. Please check input.")
 
     # Resize image
-    if resize_im:
-        pil_im.thumbnail((224, 224))
+    # if resize_im:
+    #     pil_im.thumbnail((224, 224)) # ! changed from resize((224, 224))
 
     #add gaussin blur to image
     if blur_rad:
